@@ -39,6 +39,7 @@ public class ProtocolAutomaton extends AbstractBaseGraph<ProtocolAutomatonVertex
 	
 	private ProtocolAutomatonVertex root;
 	private boolean flattening;
+	private int numberOfStates = 0;
 	
 	public ProtocolAutomatonVertex getRoot() {
 		return root;
@@ -104,6 +105,8 @@ public class ProtocolAutomaton extends AbstractBaseGraph<ProtocolAutomatonVertex
 	public void restart(ProtocolAutomatonVertex vertex) {
 		//TODO durante l'operazione di 'restart' assumo che la sequenza di operazione la posso rieseguire correttamente
 		//in generale si dovrebbe togliere l'arco se una operazione non va a buon fine quando sarebbe dovuta terminare con successo
+		
+		ArrayList<OperationAndParameters> newOperationAndParameters = new ArrayList<OperationAndParameters>(); //contiene le nuove operazioni prodotte durante l'operazione di restart
 		for (OperationAndParameters op : vertex.getOperationAndParameters()) {
 			OpResponse opResponse;
 			if (op.getParameterEntries() != null) {
@@ -118,29 +121,40 @@ public class ProtocolAutomaton extends AbstractBaseGraph<ProtocolAutomatonVertex
 			WsdlOperation wsdlOperation = op.getOperation();
 			if (response != null && 
 					!StrawberryUtils.isFaultResponse(response, wsdlOperation)) {
-				//TODO assumiamo per ora che sia solo "additivo" (tutte le operazioni arricchiscono la knowledge base
-				MessagePart[] messageParts = wsdlOperation.getDefaultResponseParts();
-				//scorro gli output dell'operazione
-				for (int i = 0; i < messageParts.length; i++) {
-					if (messageParts[i] instanceof ContentPart) {
-						SchemaType schemaType = ((ContentPart) messageParts[i]).getSchemaType();
-						String outputPartName = ((ContentPart) messageParts[i]).getName();
-						XmlObject xmlObject = StrawberryUtils.getNodeFromResponse(response, outputPartName);
-						if (xmlObject != null) {
-							//aggiungo alla knowledge base attuale
-							vertex.addParameter(schemaType, xmlObject, false);
-							
-							if (this.flattening) {
-								ArrayList<SchemaProperty> schemaProperties = StrawberryUtils.getAllSubSchemaTypes(schemaType);
-								for (SchemaProperty schemaProperty : schemaProperties) {
-									SchemaType schemaTypeCurr = schemaProperty.getType();
-									String schemaNameCurr = schemaProperty.getName().getLocalPart();
-									ArrayList<XmlObject> xmlObjects = StrawberryUtils.getNodesFromResponse(response, schemaNameCurr);
-									for (XmlObject xmObjectCurr : xmlObjects) {
-										if (xmObjectCurr != null) {
-											vertex.addParameter(schemaTypeCurr, xmObjectCurr, true);
-										}
-									}
+				
+				checkRestartedOperation(vertex, wsdlOperation, response, newOperationAndParameters);
+			}
+			//l'operazione non è andata a buon fine, mentre la prima volta si, quindi pesco nella knowledge "arricchita" dello stato corrente e provo a richiamarla
+			else {
+				//TODO una chiamata va male dopo essere andata bene alla prima esecuzione
+				System.out.println("todo");
+			}
+		}
+	}
+	
+	private void checkRestartedOperation (ProtocolAutomatonVertex vertex, WsdlOperation wsdlOperation, Response response, ArrayList<OperationAndParameters> newOperationAndParameters) {
+		//TODO assumiamo per ora che sia solo "additivo" (tutte le operazioni arricchiscono la knowledge base)
+		MessagePart[] messageParts = wsdlOperation.getDefaultResponseParts();
+		//scorro gli output dell'operazione
+		for (int i = 0; i < messageParts.length; i++) {
+			if (messageParts[i] instanceof ContentPart) {
+				SchemaType schemaType = ((ContentPart) messageParts[i]).getSchemaType();
+				String outputPartName = ((ContentPart) messageParts[i]).getName();
+				XmlObject xmlObject = StrawberryUtils.getNodeFromResponse(response, outputPartName);
+				if (xmlObject != null) {
+					//aggiungo alla knowledge base attuale
+					//vertex.addParameter(outputPartName, schemaType, xmlObject, false);
+					vertex.addParameter(findName(outputPartName, wsdlOperation.getName()), schemaType, xmlObject, false);
+					
+					if (this.flattening) {
+						ArrayList<SchemaProperty> schemaProperties = StrawberryUtils.getAllSubSchemaTypes(schemaType);
+						for (SchemaProperty schemaProperty : schemaProperties) {
+							SchemaType schemaTypeCurr = schemaProperty.getType();
+							String schemaNameCurr = schemaProperty.getName().getLocalPart();
+							ArrayList<XmlObject> xmlObjects = StrawberryUtils.getNodesFromResponse(response, schemaNameCurr);
+							for (XmlObject xmObjectCurr : xmlObjects) {
+								if (xmObjectCurr != null) {
+									vertex.addParameter(schemaNameCurr, schemaTypeCurr, xmObjectCurr, true);
 								}
 							}
 						}
@@ -200,7 +214,8 @@ public class ProtocolAutomaton extends AbstractBaseGraph<ProtocolAutomatonVertex
 						XmlObject xmlObject = StrawberryUtils.getNodeFromResponse(response, outputPartName);
 						if (xmlObject != null) {
 							//aggiungo alla knowledge base attuale
-							targetVertex.addParameter(schemaType, xmlObject, true);
+							//targetVertex.addParameter(outputPartName, schemaType, xmlObject, true);
+							targetVertex.addParameter(findName(outputPartName, wsdlOperation.getName()), schemaType, xmlObject, true);
 							targetVertex.addOperationAndParameters(opResponse.getOperationAndParameters());
 							
 							if (this.flattening) {
@@ -209,9 +224,9 @@ public class ProtocolAutomaton extends AbstractBaseGraph<ProtocolAutomatonVertex
 									SchemaType schemaTypeCurr = schemaProperty.getType();
 									String schemaNameCurr = schemaProperty.getName().getLocalPart();
 									ArrayList<XmlObject> xmlObjects = StrawberryUtils.getNodesFromResponse(response, schemaNameCurr);
-									for (XmlObject xmObjectCurr : xmlObjects) {
-										if (xmObjectCurr != null) {
-											targetVertex.addParameter(schemaTypeCurr, xmObjectCurr, true);
+									for (XmlObject xmlObjectCurr : xmlObjects) {
+										if (xmlObjectCurr != null) {
+											targetVertex.addParameter(schemaNameCurr, schemaTypeCurr, xmlObjectCurr, true);
 										}
 									}
 								}
@@ -228,14 +243,26 @@ public class ProtocolAutomaton extends AbstractBaseGraph<ProtocolAutomatonVertex
 				return temp;
 				*/
 				//TODO qui il codice con le condizioni di aggiunta di un nuovo stato, come è ora aggiungo sempre se incremento la knowledge
-				if (!sourceVertex.equals(targetVertex)) {
-					this.addVertex(targetVertex);
-					return targetVertex;
+				if (sourceVertex.addedParameter(targetVertex)) {
+					if (this.addVertex(targetVertex)) {
+						numberOfStates++;
+						System.err.println("Aggiunto lo stato #" + numberOfStates);
+						return targetVertex;
+					}
+					else 
+						return this.getVertex(targetVertex);
 				}
-				else return sourceVertex;
+				return sourceVertex;
 			}
 		}
 		return null;
+	}
+	
+	//qui bisogna verificare se il nome del parametro può essere sostituito con uno di quelli presenti nelle informazioni "semantiche" aggiuntive, 
+	//ovvero se il valore matcha con una delle espressioni regolari
+	public String findName (String name, String wsdlOperationName) {
+		if (name.equals("return")) return "return_" + wsdlOperationName;
+		else return name;
 	}
 	
 	public boolean existVertex (ProtocolAutomatonVertex vertex) {

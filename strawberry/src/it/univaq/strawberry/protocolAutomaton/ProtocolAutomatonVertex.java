@@ -1,5 +1,6 @@
 package it.univaq.strawberry.protocolAutomaton;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,6 +23,7 @@ import com.eviware.soapui.model.iface.Operation;
 
 public class ProtocolAutomatonVertex {
 	
+	public int ID;
 	public WsdlInterface wsdlInterface;
 	private ArrayList<ParameterEntry> parameters; //knowledge
 	private ArrayList<OperationAndParameters> operationAndParameters; //sequenza di operazioni che hanno condotto fino a questo stato
@@ -30,6 +32,7 @@ public class ProtocolAutomatonVertex {
 
 	public ProtocolAutomatonVertex(WsdlInterface wsdlInterface) {
 		super();
+		this.ID = 0;
 		this.wsdlInterface = wsdlInterface;
 		this.parameters = new ArrayList<ParameterEntry>();
 		this.operationAndParameters = new ArrayList<OperationAndParameters>();
@@ -39,6 +42,7 @@ public class ProtocolAutomatonVertex {
 	
 	public ProtocolAutomatonVertex(ProtocolAutomatonVertex old) {
 		super();
+		this.ID = old.ID + 1;
 		this.wsdlInterface = old.wsdlInterface;
 		this.parameters = new ArrayList<ParameterEntry>(old.getParameters());
 		this.operationAndParameters = new ArrayList<OperationAndParameters>(old.getOperationAndParameters());
@@ -46,34 +50,56 @@ public class ProtocolAutomatonVertex {
 		this.OpToTest = new ArrayList<OperationAndParametersToTest>();
 	}
 	
+	public void switchVertexContent (ProtocolAutomatonVertex newVertex) {
+		this.parameters = newVertex.getParameters();
+		this.visited = newVertex.isVisited();
+		this.operationAndParameters = newVertex.getOperationAndParameters();
+		
+		this.OpToTest = newVertex.getOpToTest();
+	}
+	
 	public ArrayList<ParameterEntry> getParameters() {
 		return parameters;
 	}
 	
-	public void addParameter(SchemaType schemaType, XmlObject value, boolean newOpToTest) {
-		ParameterEntry newParameter = new ParameterEntry(schemaType, value);
+	//aggiunge un ParameterEntry allo stato (arricchisce la knowledge)
+	public void addParameter(String name, SchemaType schemaType, XmlObject value, boolean newOpToTest) {
+		ParameterEntry newParameter = new ParameterEntry(name, schemaType, value);
 		if (!this.parameters.contains(newParameter)) {
 			this.parameters.add(newParameter);
 			
 			this.refreshOpToTest(newOpToTest);
 		}
+		//voglio aggiornare la knowledge se il valore è cambiato
+		else {
+			int index = this.parameters.indexOf(newParameter);
+			ParameterEntry oldParameter = this.parameters.get(index);
+			oldParameter.setValue(newParameter.getValue());
+		}
+	}
+	 
+	public void setParameters(ArrayList<ParameterEntry> parameters) {
+		this.parameters = parameters;
 	}
 	
 	//aggiorno lo stato con una lista di tutte le operazioni che è possibile chiamare SINTATTICAMENTE
 	//data la knowledge dello stato stesso
 	public void refreshOpToTest (boolean newOpToTest) {
+		
 		if (newOpToTest) 
 			this.OpToTest = new ArrayList<OperationAndParametersToTest>();
+		
 		List<Operation> operations = this.wsdlInterface.getOperationList();
 		for (Operation operation : operations) {
 			WsdlOperation wsdlOperation = wsdlInterface.getOperationByName(operation.getName());
 			//è possibile chiamare l'operation da questo stato?
 			if (this.canCallOperationFromKnowledge(wsdlOperation)) {
 				if (StrawberryUtils.numberOfInputs(wsdlOperation) > 0) {
-					Generator<ParameterEntry> matchingParams = Combinatorics.combinParams(this, wsdlOperation);
+					Generator<ParameterEntry> matchingParams = Combinatorics.combinParams(this.getParameters(), wsdlOperation);
 					for (ICombinatoricsVector<ParameterEntry> vector : matchingParams) {
 						if (StrawberryUtils.canCallOperation(vector, wsdlOperation)) {
-							OperationAndParametersToTest op = new OperationAndParametersToTest(new OperationAndParameters(wsdlOperation, vector));
+							OperationAndParameters operationAndParameter = new OperationAndParameters(wsdlOperation, vector);
+							OperationAndParametersToTest op = new OperationAndParametersToTest(operationAndParameter);
 							if (!this.OpToTest.contains(op)) {
 								if (!newOpToTest) {
 									//non vogliamo testare nuovamente operazioni già testate con dati 
@@ -87,7 +113,8 @@ public class ProtocolAutomatonVertex {
 				}
 				//l'operation non ha parametri in input
 				else {
-					OperationAndParametersToTest op = new OperationAndParametersToTest(new OperationAndParameters(wsdlOperation, null));
+					OperationAndParameters operationAndParameter = new OperationAndParameters(wsdlOperation, null);
+					OperationAndParametersToTest op = new OperationAndParametersToTest(operationAndParameter);
 					if (!this.OpToTest.contains(op)) 
 						this.OpToTest.add(op);
 				}
@@ -118,6 +145,10 @@ public class ProtocolAutomatonVertex {
 		return null;
 	}
 	
+	public List<OperationAndParametersToTest> getOpToTest() {
+		return OpToTest;
+	}
+
 	//restituisce tutti gli schema types delle entry dello stato
 	public ArrayList<SchemaType> getSchemaTypes() {
 		ArrayList<SchemaType> schemaTypes = new ArrayList<SchemaType>();
@@ -164,6 +195,21 @@ public class ProtocolAutomatonVertex {
 			return false;
 		}
 		return true;
+	}
+	
+	//controlliamo se vertex ha un nuovo parametro (name,type): in questo caso return true (dovrà essere aggiunto come nuovo stato), altrimenti se non aggiunge nuovi (name,type) 
+	//return false 
+	public boolean addedParameter (Object vertex) {
+		for (ParameterEntry parameterTarget : ((ProtocolAutomatonVertex)vertex).getParameters()) {
+			boolean finded = false;
+			for (ParameterEntry parameterSource : this.getParameters()) {
+				if (parameterTarget.equals(parameterSource)) {
+					finded = true;
+				}
+			}
+			if (!finded) return true;
+		}
+		return false;
 	}
 	
 	public void setAsVisited() {

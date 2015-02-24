@@ -66,14 +66,16 @@ public class Main {
 			WsdlOperation instancePoolOperation1 = wsdlInterface.getOperationByName("openSession");
 			
 			String instancePoolString1 = "<username> username </username>";
-			instancePool.addParameter(((ContentPart)instancePoolOperation1.getDefaultRequestParts()[0]).getSchemaType(), 
+			instancePool.addParameter(((ContentPart)instancePoolOperation1.getDefaultRequestParts()[0]).getName(),
+										((ContentPart)instancePoolOperation1.getDefaultRequestParts()[0]).getSchemaType(), 
 										XmlUtils.createXmlObject(instancePoolString1), true);
 			
 			String instancePoolString2 = "<password> password </password>";
-			instancePool.addParameter(((ContentPart)instancePoolOperation1.getDefaultRequestParts()[1]).getSchemaType(), 
-					XmlUtils.createXmlObject(instancePoolString2), true);
+			instancePool.addParameter(((ContentPart)instancePoolOperation1.getDefaultRequestParts()[1]).getName(),
+										((ContentPart)instancePoolOperation1.getDefaultRequestParts()[1]).getSchemaType(), 
+										XmlUtils.createXmlObject(instancePoolString2), true);
 		
-			boolean flattening = true;
+			boolean flattening = false;
 			
 			ArrayList<OperationSideEffect> operationSideEffects = new ArrayList<OperationSideEffect>();
 			operationSideEffects.add(new OperationSideEffect("destroySession", OperationSideEffect.SideEffect.RESET));
@@ -89,7 +91,7 @@ public class Main {
 			Stack<ProtocolAutomatonVertex> stack = new Stack<ProtocolAutomatonVertex>();
 			stack.push(protocolAutomaton.getRoot());
 			int i = 0;
-			while (i<=15 && !stack.isEmpty()) {
+			while (i<=250 && !stack.isEmpty()) {
 				//System.out.println(protocolAutomaton.toString());
 				
 				ProtocolAutomatonVertex vertex = stack.peek();
@@ -97,22 +99,27 @@ public class Main {
 				if (operation != null) {
 					//System.err.println(operation.getOperation().getName());
 					ProtocolAutomatonVertex tempVertex = protocolAutomaton.automatonConstructionStep(vertex, operation);
-						if (tempVertex != null && !tempVertex.equals(vertex)) {
+						if (tempVertex != null && tempVertex.ID != vertex.ID) {
 							stack.push(tempVertex);
 							i++;
 						}
 				}
 				else {
-					if (stack.size() >= 1)
-						stack.pop();
+					if (stack.size() >= 1) {
+						ProtocolAutomatonVertex v;
+						v = stack.pop();
+						Object p=v;
+					}
 					for (OperationAndParameters resetOperation : vertex.getResetOperation()) {
 						protocolAutomaton.automatonResetStep(vertex, resetOperation);
 					}
-					if (stack.size() >= 1)
-						protocolAutomaton.restart(stack.peek());	
+					if (stack.size() >= 1) {
+						ProtocolAutomatonVertex v = stack.peek();
+						protocolAutomaton.restart(v);
 					//System.out.println(protocolAutomaton.toString());
-					toFile(protocolAutomaton.toString());
-					System.out.println("\n");
+					//toFile(protocolAutomaton.toString());
+					//System.out.println("\n");
+					}
 				}
 			}
 			

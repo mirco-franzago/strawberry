@@ -17,10 +17,9 @@ import com.eviware.soapui.model.iface.Operation;
 public class Combinatorics {
 
 	//restituisce tutte le entry dello stato corrente i cui schematype matchano con quelli in input dell'operazione
-	private static ArrayList<ParameterEntry> matchingParams(ProtocolAutomatonVertex sourceVertex, WsdlOperation wsdlOperation) {
+	private static ArrayList<ParameterEntry> matchingParams(ArrayList<ParameterEntry> sourceVertexParameters, WsdlOperation wsdlOperation) {
 		
 		ArrayList<SchemaType> operationSchemaTypes = StrawberryUtils.getInputSchemaTypesByOperation(wsdlOperation);
-		ArrayList<ParameterEntry> sourceVertexParameters = sourceVertex.getParameters();
 		
 		ArrayList<ParameterEntry> matchingParameters = new ArrayList<ParameterEntry>();
 		
@@ -33,9 +32,9 @@ public class Combinatorics {
 	}
 
 	/* genera le possibili permutazioni */
-	public static Generator<ParameterEntry> combinParams (ProtocolAutomatonVertex sourceVertex, WsdlOperation wsdlOperation) {
+	public static Generator<ParameterEntry> combinParams (ArrayList<ParameterEntry> sourceVertexParameters, WsdlOperation wsdlOperation) {
 		
-		ArrayList<ParameterEntry> matchingParameters = matchingParams(sourceVertex, wsdlOperation);
+		ArrayList<ParameterEntry> matchingParameters = matchingParams(sourceVertexParameters, wsdlOperation);
 		
 		//Create the initial vector
 	   ICombinatoricsVector<ParameterEntry> originalVector = Factory.createVector(matchingParameters);

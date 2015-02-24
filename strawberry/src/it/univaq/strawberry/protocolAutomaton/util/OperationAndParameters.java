@@ -7,6 +7,7 @@ import org.paukov.combinatorics.ICombinatoricsVector;
 
 import com.eviware.soapui.impl.wsdl.WsdlOperation;
 
+//serve per richiamare le operazioni in sequenza dopo una chiamata "di reset" (vogliamo "ricostruire" lo stato interno del servizio)
 public class OperationAndParameters {
 	private WsdlOperation operation;
 	private ICombinatoricsVector<ParameterEntry> parameterEntries;

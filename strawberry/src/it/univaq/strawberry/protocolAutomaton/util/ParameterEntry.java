@@ -8,6 +8,7 @@ import org.w3c.dom.Node;
 import com.eviware.soapui.support.xml.XmlUtils;
 
 public class ParameterEntry {
+	public String name;
 	public SchemaType schemaType;
 	public XmlObject value;
 	
@@ -19,7 +20,16 @@ public class ParameterEntry {
 		return value;
 	}
 	
-	public ParameterEntry(SchemaType schemaType, XmlObject value) {
+	public String getName() {
+		return name;
+	}
+	
+	public void setValue(XmlObject value) {
+		this.value = value;
+	}
+
+	public ParameterEntry(String name, SchemaType schemaType, XmlObject value) {
+		this.name = name;
 		this.schemaType = schemaType;
 		this.value = value;
 	}
@@ -29,7 +39,8 @@ public class ParameterEntry {
 		result =  this.schemaType.equals(((ParameterEntry)parameterEntry).schemaType) &&
 				//XmlUtils.serialize(this.value).equals(XmlUtils.serialize(parameterEntry.value));
 				//this.value.valueEquals(((ParameterEntry)parameterEntry).value);
-				this.value.toString().equals(((ParameterEntry)parameterEntry).value.toString());
+				//this.value.toString().equals(((ParameterEntry)parameterEntry).value.toString()) &&
+				this.name.equals(((ParameterEntry)parameterEntry).name);
 		return result;
 	}
 }
