@@ -2,6 +2,7 @@ package it.univaq.strawberry.protocolAutomaton;
 
 import java.util.ArrayList;
 
+import org.jgrapht.ext.EdgeNameProvider;
 import org.jgrapht.graph.DefaultEdge;
 import org.paukov.combinatorics.ICombinatoricsVector;
 
@@ -31,6 +32,10 @@ public class ProtocolAutomatonEdge extends DefaultEdge {
 			return operation.getName();
 		}
 		else return "null";
+	}
+	
+	public WsdlOperation getWsdlOperation() {
+		return this.operation;
 	}
 	
 }

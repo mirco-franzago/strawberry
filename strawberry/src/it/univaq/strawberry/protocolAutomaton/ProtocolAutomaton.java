@@ -75,7 +75,9 @@ public class ProtocolAutomaton extends AbstractBaseGraph<ProtocolAutomatonVertex
 
 		ProtocolAutomatonVertex targetVertex = this.addNewVertex(opResponse, sourceVertex);
 		if (targetVertex != null) {
-			this.addEdge(sourceVertex, targetVertex, new ProtocolAutomatonEdge(wsdlOperation, opResponse.getParameterEntry()));
+			ProtocolAutomatonEdge newEdge = new ProtocolAutomatonEdge(wsdlOperation, opResponse.getParameterEntry());
+			if (!this.existEdge(newEdge, sourceVertex, targetVertex)) 
+				this.addEdge(sourceVertex, targetVertex, newEdge);
 		}
 		return targetVertex;
 	}
@@ -98,7 +100,9 @@ public class ProtocolAutomaton extends AbstractBaseGraph<ProtocolAutomatonVertex
 		Response response = opResponse.getResponse();	
 		if (response != null && 
 				!StrawberryUtils.isFaultResponse(response, wsdlOperation)) {
-			this.addEdge(sourceVertex, this.root, new ProtocolAutomatonEdge(wsdlOperation, opResponse.getParameterEntry()));
+			ProtocolAutomatonEdge newEdge = new ProtocolAutomatonEdge(wsdlOperation, opResponse.getParameterEntry());
+			if (!this.existEdge(newEdge, sourceVertex, this.root)) 
+				this.addEdge(sourceVertex, this.root, newEdge);
 		}
 	}
 	
@@ -127,7 +131,7 @@ public class ProtocolAutomaton extends AbstractBaseGraph<ProtocolAutomatonVertex
 			//l'operazione non è andata a buon fine, mentre la prima volta si, quindi pesco nella knowledge "arricchita" dello stato corrente e provo a richiamarla
 			else {
 				//TODO una chiamata va male dopo essere andata bene alla prima esecuzione
-				System.out.println("todo");
+ 				System.out.println("todo");
 			}
 		}
 	}
@@ -154,7 +158,7 @@ public class ProtocolAutomaton extends AbstractBaseGraph<ProtocolAutomatonVertex
 							ArrayList<XmlObject> xmlObjects = StrawberryUtils.getNodesFromResponse(response, schemaNameCurr);
 							for (XmlObject xmObjectCurr : xmlObjects) {
 								if (xmObjectCurr != null) {
-									vertex.addParameter(schemaNameCurr, schemaTypeCurr, xmObjectCurr, true);
+									vertex.addParameter(schemaNameCurr, schemaTypeCurr, xmObjectCurr, false);
 								}
 							}
 						}
@@ -216,7 +220,7 @@ public class ProtocolAutomaton extends AbstractBaseGraph<ProtocolAutomatonVertex
 							//aggiungo alla knowledge base attuale
 							//targetVertex.addParameter(outputPartName, schemaType, xmlObject, true);
 							targetVertex.addParameter(findName(outputPartName, wsdlOperation.getName()), schemaType, xmlObject, true);
-							targetVertex.addOperationAndParameters(opResponse.getOperationAndParameters());
+							//targetVertex.addOperationAndParameters(opResponse.getOperationAndParameters());
 							
 							if (this.flattening) {
 								ArrayList<SchemaProperty> schemaProperties = StrawberryUtils.getAllSubSchemaTypes(schemaType);
@@ -234,24 +238,24 @@ public class ProtocolAutomaton extends AbstractBaseGraph<ProtocolAutomatonVertex
 						}
 					}
 				}
-				/*
-				ProtocolAutomatonVertex temp = this.getVertex(targetVertex);
-				if (temp == null) {
-					this.addVertex(targetVertex);
-					temp = targetVertex;
-				}
-				return temp;
-				*/
+
 				//TODO qui il codice con le condizioni di aggiunta di un nuovo stato, come è ora aggiungo sempre se incremento la knowledge
 				if (sourceVertex.addedParameter(targetVertex)) {
-					if (this.addVertex(targetVertex)) {
+					ProtocolAutomatonVertex temp = this.getVertex(targetVertex);
+					if (temp == null) {
+						targetVertex.addOperationAndParameters(opResponse.getOperationAndParameters());
+						this.addVertex(targetVertex);
 						numberOfStates++;
 						System.err.println("Aggiunto lo stato #" + numberOfStates);
 						return targetVertex;
 					}
-					else 
-						return this.getVertex(targetVertex);
+					else {
+						//lo stato già esiste nel grafo
+						//sourceVertex.setOpToTest(targetVertex.getOpToTest());
+						return temp;
+					}
 				}
+				sourceVertex.addOperationAndParameters(opResponse.getOperationAndParameters());
 				return sourceVertex;
 			}
 		}
@@ -263,6 +267,17 @@ public class ProtocolAutomaton extends AbstractBaseGraph<ProtocolAutomatonVertex
 	public String findName (String name, String wsdlOperationName) {
 		if (name.equals("return")) return "return_" + wsdlOperationName;
 		else return name;
+	}
+	
+	//TODO forse bisogna raffinare le condizioni di equivalenza fra archi (influisca sull'aggiunta o meno di un nuovo arco
+	public boolean existEdge(ProtocolAutomatonEdge edge, ProtocolAutomatonVertex sourceVertex, ProtocolAutomatonVertex targetVertex) {
+		Set<ProtocolAutomatonEdge> set = this.getAllEdges(sourceVertex, targetVertex);
+		for (ProtocolAutomatonEdge currEdge : set) {
+			if (edge.operation.getName().equals(currEdge.operation.getName())) {
+				return true;
+			}
+		}
+		return false;
 	}
 	
 	public boolean existVertex (ProtocolAutomatonVertex vertex) {
@@ -286,14 +301,14 @@ public class ProtocolAutomaton extends AbstractBaseGraph<ProtocolAutomatonVertex
 		return null;
 	}
 	
-	public ProtocolAutomatonVertex getNextNonVisited () {
-		Set<ProtocolAutomatonVertex> set = this.vertexSet();
-		for (ProtocolAutomatonVertex vertex : set) {
-			if (!vertex.isVisited()) {
-				return vertex;
-			}
-		}
-		return null;
-	}
+//	public ProtocolAutomatonVertex getNextNonVisited () {
+//		Set<ProtocolAutomatonVertex> set = this.vertexSet();
+//		for (ProtocolAutomatonVertex vertex : set) {
+//			if (!vertex.isVisited()) {
+//				return vertex;
+//			}
+//		}
+//		return null;
+//	}
 
 }

@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.apache.xmlbeans.SchemaType;
 import org.apache.xmlbeans.XmlObject;
+import org.jgrapht.ext.VertexNameProvider;
 import org.paukov.combinatorics.Generator;
 import org.paukov.combinatorics.ICombinatoricsVector;
 import org.w3c.dom.Document;
@@ -27,7 +28,7 @@ public class ProtocolAutomatonVertex {
 	public WsdlInterface wsdlInterface;
 	private ArrayList<ParameterEntry> parameters; //knowledge
 	private ArrayList<OperationAndParameters> operationAndParameters; //sequenza di operazioni che hanno condotto fino a questo stato
-	private boolean visited;
+	private boolean brandNew;
 	private List<OperationAndParametersToTest> OpToTest; //operazioni ancora da testare
 
 	public ProtocolAutomatonVertex(WsdlInterface wsdlInterface) {
@@ -36,7 +37,7 @@ public class ProtocolAutomatonVertex {
 		this.wsdlInterface = wsdlInterface;
 		this.parameters = new ArrayList<ParameterEntry>();
 		this.operationAndParameters = new ArrayList<OperationAndParameters>();
-		this.visited = false;
+		this.brandNew = false;
 		this.OpToTest = new ArrayList<OperationAndParametersToTest>();
 	}
 	
@@ -46,13 +47,13 @@ public class ProtocolAutomatonVertex {
 		this.wsdlInterface = old.wsdlInterface;
 		this.parameters = new ArrayList<ParameterEntry>(old.getParameters());
 		this.operationAndParameters = new ArrayList<OperationAndParameters>(old.getOperationAndParameters());
-		this.visited = false;
+		this.brandNew = true;
 		this.OpToTest = new ArrayList<OperationAndParametersToTest>();
 	}
 	
 	public void switchVertexContent (ProtocolAutomatonVertex newVertex) {
 		this.parameters = newVertex.getParameters();
-		this.visited = newVertex.isVisited();
+		this.brandNew = newVertex.isBrandNew();
 		this.operationAndParameters = newVertex.getOperationAndParameters();
 		
 		this.OpToTest = newVertex.getOpToTest();
@@ -149,6 +150,10 @@ public class ProtocolAutomatonVertex {
 		return OpToTest;
 	}
 
+	public void setOpToTest(List<OperationAndParametersToTest> opToTest) {
+		this.OpToTest = opToTest;
+	}
+
 	//restituisce tutti gli schema types delle entry dello stato
 	public ArrayList<SchemaType> getSchemaTypes() {
 		ArrayList<SchemaType> schemaTypes = new ArrayList<SchemaType>();
@@ -212,27 +217,22 @@ public class ProtocolAutomatonVertex {
 		return false;
 	}
 	
-	public void setAsVisited() {
-		this.visited = true;
+	public void setBrandNew(boolean brandNew) {
+		this.brandNew = brandNew;
 	}
 	
-	public boolean isVisited() {
-		return this.visited;
+	public boolean isBrandNew() {
+		return this.brandNew;
 	}
+
 	
 	public String toString() {
 		StringBuilder stringBuilder = new StringBuilder();
-		stringBuilder.append("< ");
+		stringBuilder.append("{");
 		for (ParameterEntry paramEntry : parameters) {
-			//stringBuilder.append(paramEntry.schemaType.getName().getLocalPart() + " - ");
-			if (paramEntry.value.xmlText().length() > 70)
-				stringBuilder.append(paramEntry.value.xmlText().substring(0, 70) + " : "+ paramEntry.schemaType.getName().getLocalPart() + " | ");
-			else 
-				stringBuilder.append(paramEntry.value.xmlText() + " : "+ paramEntry.schemaType.getName().getLocalPart() + " | ");
-
-			//stringBuilder.append(paramEntry.value.getDomNode().getFirstChild().getFirstChild().toString().substring(0, 13) + " : "+ paramEntry.schemaType.getName().getLocalPart() + " | ");
-		}
-		stringBuilder.append(" >\n");
+			stringBuilder.append(paramEntry.getName() + ": " + paramEntry.schemaType.getName().getLocalPart() + ", \n");
+			}
+		stringBuilder.append("}");
 		return stringBuilder.toString();
 	}
 

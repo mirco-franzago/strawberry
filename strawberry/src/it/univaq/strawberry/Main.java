@@ -1,6 +1,7 @@
 package it.univaq.strawberry;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -10,7 +11,6 @@ import java.util.Stack;
 import javax.xml.namespace.QName;
 
 //import net.sf.saxon.type.AnySimpleType;
-
 import org.apache.xmlbeans.SchemaAttributeModel;
 import org.apache.xmlbeans.SchemaGlobalElement;
 import org.apache.xmlbeans.SchemaParticle;
@@ -18,10 +18,17 @@ import org.apache.xmlbeans.SchemaProperty;
 import org.apache.xmlbeans.SchemaType;
 import org.apache.xmlbeans.XmlAnySimpleType;
 import org.apache.xmlbeans.XmlObject;
+import org.jgrapht.ext.DOTExporter;
+import org.jgrapht.ext.EdgeNameProvider;
+import org.jgrapht.ext.IntegerNameProvider;
+import org.jgrapht.ext.StringEdgeNameProvider;
+import org.jgrapht.ext.StringNameProvider;
+import org.jgrapht.ext.VertexNameProvider;
 import org.w3c.dom.Document;
 
 import it.univaq.strawberry.StrawberryUtils;
 import it.univaq.strawberry.protocolAutomaton.ProtocolAutomaton;
+import it.univaq.strawberry.protocolAutomaton.ProtocolAutomatonEdge;
 import it.univaq.strawberry.protocolAutomaton.ProtocolAutomatonVertex;
 import it.univaq.strawberry.protocolAutomaton.util.OperationAndParameters;
 import it.univaq.strawberry.protocolAutomaton.util.OperationSideEffect;
@@ -75,7 +82,7 @@ public class Main {
 										((ContentPart)instancePoolOperation1.getDefaultRequestParts()[1]).getSchemaType(), 
 										XmlUtils.createXmlObject(instancePoolString2), true);
 		
-			boolean flattening = false;
+			boolean flattening = true;
 			
 			ArrayList<OperationSideEffect> operationSideEffects = new ArrayList<OperationSideEffect>();
 			operationSideEffects.add(new OperationSideEffect("destroySession", OperationSideEffect.SideEffect.RESET));
@@ -91,7 +98,7 @@ public class Main {
 			Stack<ProtocolAutomatonVertex> stack = new Stack<ProtocolAutomatonVertex>();
 			stack.push(protocolAutomaton.getRoot());
 			int i = 0;
-			while (i<=250 && !stack.isEmpty()) {
+			while (i<=150 && !stack.isEmpty()) {
 				//System.out.println(protocolAutomaton.toString());
 				
 				ProtocolAutomatonVertex vertex = stack.peek();
@@ -99,10 +106,23 @@ public class Main {
 				if (operation != null) {
 					//System.err.println(operation.getOperation().getName());
 					ProtocolAutomatonVertex tempVertex = protocolAutomaton.automatonConstructionStep(vertex, operation);
-						if (tempVertex != null && tempVertex.ID != vertex.ID) {
+						if (tempVertex != null && 
+								tempVertex.isBrandNew()) {
+							
+							tempVertex.setBrandNew(false);
 							stack.push(tempVertex);
 							i++;
 						}
+						//lo stato esiste già, devo fare reset prima di proseguire
+						else if (tempVertex != null && !tempVertex.isBrandNew() 
+								&& !vertex.equals(tempVertex)) {    
+							if (tempVertex.getNonTestedOp() != null)
+								System.out.println("che succede? Non sarebbe dovuto capitare...");
+
+								for (OperationAndParameters resetOperation : vertex.getResetOperation())
+									protocolAutomaton.automatonResetStep(vertex, resetOperation);
+								protocolAutomaton.restart(vertex);
+							}
 				}
 				else {
 					if (stack.size() >= 1) {
@@ -136,9 +156,18 @@ public class Main {
 				i++;
 			}
 			*/
+			DOTExporter<ProtocolAutomatonVertex, ProtocolAutomatonEdge> exporter = new DOTExporter<ProtocolAutomatonVertex, ProtocolAutomatonEdge>(
+					new IntegerNameProvider<ProtocolAutomatonVertex>(), 
+					new StringNameProvider<ProtocolAutomatonVertex>(),
+					new StringEdgeNameProvider<ProtocolAutomatonEdge>());
+			String targetDirectory = "test-results/";
+			new File(targetDirectory).mkdirs();
+			exporter.export(new FileWriter(targetDirectory + "protocolAutomaton.dot"), protocolAutomaton);
+			
 			System.out.println("contatore: " + i);
 			System.out.println(protocolAutomaton.toString());
-			
+
+
 /*
 			// get desired operation
 			WsdlOperation operation = (WsdlOperation) wsdlInterface

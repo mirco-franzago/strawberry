@@ -37,5 +37,8 @@
 	<classpathentry kind="lib" path="lib/jms-1.1.jar"/>
 	<classpathentry kind="lib" path="lib/mail-1.4.jar"/>
 	<classpathentry kind="lib" path="lib/json-lib-2.2.2-jdk15.jar"/>
+	<classpathentry kind="lib" path="lib/jgraphx.jar"/>
+	<classpathentry kind="lib" path="lib/jgraph.jar"/>
+	<classpathentry kind="lib" path="lib/jgrapht-ext-0.9.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

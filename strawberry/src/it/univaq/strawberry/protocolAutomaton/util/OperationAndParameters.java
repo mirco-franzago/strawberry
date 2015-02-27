@@ -59,4 +59,7 @@ public class OperationAndParameters {
 		return true;
 	}
 	
+	public String toString() {
+		return this.operation.getName();
+	}
 }
