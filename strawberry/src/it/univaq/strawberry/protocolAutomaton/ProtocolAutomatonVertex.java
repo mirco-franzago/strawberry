@@ -64,8 +64,8 @@ public class ProtocolAutomatonVertex {
 	}
 	
 	//aggiunge un ParameterEntry allo stato (arricchisce la knowledge)
-	public void addParameter(String name, SchemaType schemaType, XmlObject value, boolean newOpToTest) {
-		ParameterEntry newParameter = new ParameterEntry(name, schemaType, value);
+	public void addParameter(String name, SchemaType schemaType, XmlObject value, String mainTypeName, boolean newOpToTest) {
+		ParameterEntry newParameter = new ParameterEntry(name, schemaType, value, mainTypeName);
 		if (!this.parameters.contains(newParameter)) {
 			this.parameters.add(newParameter);
 			

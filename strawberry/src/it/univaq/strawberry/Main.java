@@ -10,6 +10,7 @@ import java.util.Stack;
 
 import javax.xml.namespace.QName;
 
+
 //import net.sf.saxon.type.AnySimpleType;
 import org.apache.xmlbeans.SchemaAttributeModel;
 import org.apache.xmlbeans.SchemaGlobalElement;
@@ -32,6 +33,7 @@ import it.univaq.strawberry.protocolAutomaton.ProtocolAutomatonEdge;
 import it.univaq.strawberry.protocolAutomaton.ProtocolAutomatonVertex;
 import it.univaq.strawberry.protocolAutomaton.util.OperationAndParameters;
 import it.univaq.strawberry.protocolAutomaton.util.OperationSideEffect;
+import it.univaq.strawberry.protocolAutomaton.util.SideEffect.SideEffectType;
 
 import com.eviware.soapui.SoapUI;
 import com.eviware.soapui.StandaloneSoapUICore;
@@ -73,25 +75,26 @@ public class Main {
 			WsdlOperation instancePoolOperation1 = wsdlInterface.getOperationByName("openSession");
 			
 			String instancePoolString1 = "<username> username </username>";
-			instancePool.addParameter(((ContentPart)instancePoolOperation1.getDefaultRequestParts()[0]).getName(),
+			String namePar1 = ((ContentPart)instancePoolOperation1.getDefaultRequestParts()[0]).getName();
+			instancePool.addParameter(namePar1,
 										((ContentPart)instancePoolOperation1.getDefaultRequestParts()[0]).getSchemaType(), 
-										XmlUtils.createXmlObject(instancePoolString1), true);
+										XmlUtils.createXmlObject(instancePoolString1), 
+										namePar1,
+										true);
 			
+			String namePar2 = ((ContentPart)instancePoolOperation1.getDefaultRequestParts()[1]).getName();
 			String instancePoolString2 = "<password> password </password>";
-			instancePool.addParameter(((ContentPart)instancePoolOperation1.getDefaultRequestParts()[1]).getName(),
+			instancePool.addParameter(namePar2,
 										((ContentPart)instancePoolOperation1.getDefaultRequestParts()[1]).getSchemaType(), 
-										XmlUtils.createXmlObject(instancePoolString2), true);
+										XmlUtils.createXmlObject(instancePoolString2),
+										namePar2,
+										true);
 		
 			boolean flattening = true;
 			
-			ArrayList<OperationSideEffect> operationSideEffects = new ArrayList<OperationSideEffect>();
-			operationSideEffects.add(new OperationSideEffect("destroySession", OperationSideEffect.SideEffect.RESET));
-			operationSideEffects.add(new OperationSideEffect("openSession", OperationSideEffect.SideEffect.ADD));
-			operationSideEffects.add(new OperationSideEffect("getAvailableProducts", OperationSideEffect.SideEffect.ADD));
-			operationSideEffects.add(new OperationSideEffect("emptyShoppingCart", OperationSideEffect.SideEffect.EDIT));
-			operationSideEffects.add(new OperationSideEffect("getShoppingCart", OperationSideEffect.SideEffect.ADD));
-			operationSideEffects.add(new OperationSideEffect("addProductToShoppingCart", OperationSideEffect.SideEffect.EDIT));
-			operationSideEffects.add(new OperationSideEffect("buyProductsInShoppingCart", OperationSideEffect.SideEffect.EDIT));
+			OperationSideEffect operationSideEffect = new OperationSideEffect();
+			operationSideEffect.add("destroySession", SideEffectType.RESET);
+			operationSideEffect.add("destroySession", SideEffectType.REMOVE, new String[]{"session"});
 			
 			ProtocolAutomaton protocolAutomaton = new ProtocolAutomaton(instancePool, flattening);
 			

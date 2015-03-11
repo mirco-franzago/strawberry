@@ -11,6 +11,7 @@ public class ParameterEntry {
 	public String name;
 	public SchemaType schemaType;
 	public XmlObject value;
+	public String mainTypeName; //riferimento al tipo "padre" (in caso di flattaning)
 	
 	public SchemaType getSchemaType() {
 		return schemaType;
@@ -28,10 +29,17 @@ public class ParameterEntry {
 		this.value = value;
 	}
 
-	public ParameterEntry(String name, SchemaType schemaType, XmlObject value) {
+//	public ParameterEntry(String name, SchemaType schemaType, XmlObject value) {
+//		this.name = name;
+//		this.schemaType = schemaType;
+//		this.value = value;
+//	}
+	
+	public ParameterEntry(String name, SchemaType schemaType, XmlObject value, String mainTypeName) {
 		this.name = name;
 		this.schemaType = schemaType;
 		this.value = value;
+		this.mainTypeName = mainTypeName;
 	}
 	
 	public boolean equals (Object parameterEntry) {

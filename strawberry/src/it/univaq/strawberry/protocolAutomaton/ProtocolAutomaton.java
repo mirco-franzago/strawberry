@@ -148,7 +148,10 @@ public class ProtocolAutomaton extends AbstractBaseGraph<ProtocolAutomatonVertex
 				if (xmlObject != null) {
 					//aggiungo alla knowledge base attuale
 					//vertex.addParameter(outputPartName, schemaType, xmlObject, false);
-					vertex.addParameter(findName(outputPartName, wsdlOperation.getName()), schemaType, xmlObject, false);
+					
+					//vertex.addParameter(findName(outputPartName, wsdlOperation.getName()), schemaType, xmlObject, false);
+					String mainTypeName = findName(outputPartName, schemaType.getName().getLocalPart());
+					vertex.addParameter(mainTypeName, schemaType, xmlObject, mainTypeName, false);
 					
 					if (this.flattening) {
 						ArrayList<SchemaProperty> schemaProperties = StrawberryUtils.getAllSubSchemaTypes(schemaType);
@@ -158,7 +161,7 @@ public class ProtocolAutomaton extends AbstractBaseGraph<ProtocolAutomatonVertex
 							ArrayList<XmlObject> xmlObjects = StrawberryUtils.getNodesFromResponse(response, schemaNameCurr);
 							for (XmlObject xmObjectCurr : xmlObjects) {
 								if (xmObjectCurr != null) {
-									vertex.addParameter(schemaNameCurr, schemaTypeCurr, xmObjectCurr, false);
+									vertex.addParameter(schemaNameCurr, schemaTypeCurr, xmObjectCurr, mainTypeName, false);
 								}
 							}
 						}
@@ -219,8 +222,11 @@ public class ProtocolAutomaton extends AbstractBaseGraph<ProtocolAutomatonVertex
 						if (xmlObject != null) {
 							//aggiungo alla knowledge base attuale
 							//targetVertex.addParameter(outputPartName, schemaType, xmlObject, true);
-							targetVertex.addParameter(findName(outputPartName, wsdlOperation.getName()), schemaType, xmlObject, true);
 							//targetVertex.addOperationAndParameters(opResponse.getOperationAndParameters());
+							
+							//targetVertex.addParameter(findName(outputPartName, wsdlOperation.getName()), schemaType, xmlObject, true);
+							String mainTypeName = findName(outputPartName, schemaType.getName().getLocalPart());
+							targetVertex.addParameter(mainTypeName, schemaType, xmlObject, mainTypeName, true);
 							
 							if (this.flattening) {
 								ArrayList<SchemaProperty> schemaProperties = StrawberryUtils.getAllSubSchemaTypes(schemaType);
@@ -230,7 +236,7 @@ public class ProtocolAutomaton extends AbstractBaseGraph<ProtocolAutomatonVertex
 									ArrayList<XmlObject> xmlObjects = StrawberryUtils.getNodesFromResponse(response, schemaNameCurr);
 									for (XmlObject xmlObjectCurr : xmlObjects) {
 										if (xmlObjectCurr != null) {
-											targetVertex.addParameter(schemaNameCurr, schemaTypeCurr, xmlObjectCurr, true);
+											targetVertex.addParameter(schemaNameCurr, schemaTypeCurr, xmlObjectCurr, mainTypeName, true);
 										}
 									}
 								}
@@ -269,7 +275,7 @@ public class ProtocolAutomaton extends AbstractBaseGraph<ProtocolAutomatonVertex
 		else return name;
 	}
 	
-	//TODO forse bisogna raffinare le condizioni di equivalenza fra archi (influisca sull'aggiunta o meno di un nuovo arco
+	//TODO forse bisogna raffinare le condizioni di equivalenza fra archi (influisce sull'aggiunta o meno di un nuovo arco
 	public boolean existEdge(ProtocolAutomatonEdge edge, ProtocolAutomatonVertex sourceVertex, ProtocolAutomatonVertex targetVertex) {
 		Set<ProtocolAutomatonEdge> set = this.getAllEdges(sourceVertex, targetVertex);
 		for (ProtocolAutomatonEdge currEdge : set) {
