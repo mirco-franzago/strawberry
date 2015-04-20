@@ -78,6 +78,17 @@ public class ProtocolAutomatonVertex {
 			oldParameter.setValue(newParameter.getValue());
 		}
 	}
+	
+	//decrementa la knowledge, SideEffect di tipo REMOVE
+	public void removeParameters(String mainTypeNameToRemove, boolean newOpToTest) {
+		for (ParameterEntry parameter : this.parameters) {
+			if (parameter.mainTypeName.equals(mainTypeNameToRemove)) {
+				this.parameters.remove(parameter);
+			}
+		}
+		
+		this.refreshOpToTest(newOpToTest);
+	}
 	 
 	public void setParameters(ArrayList<ParameterEntry> parameters) {
 		this.parameters = parameters;

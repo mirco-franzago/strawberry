@@ -90,11 +90,11 @@ public class Main {
 										namePar2,
 										true);
 		
-			boolean flattening = true;
+			boolean flattening = false;
 			
-			OperationSideEffect operationSideEffect = new OperationSideEffect();
-			operationSideEffect.add("destroySession", SideEffectType.RESET);
-			operationSideEffect.add("destroySession", SideEffectType.REMOVE, new String[]{"session"});
+//			OperationSideEffect operationSideEffect = new OperationSideEffect();
+//			operationSideEffect.add("destroySession", SideEffectType.RESET);
+//			operationSideEffect.add("destroySession", SideEffectType.REMOVE, new String[]{"session"});
 			
 			ProtocolAutomaton protocolAutomaton = new ProtocolAutomaton(instancePool, flattening);
 			
